@@ -1,0 +1,11 @@
+# First
+
+Get the following working, basically in line display the input
+by replacing text not printing a new one.
+==============================
+
+>>> 4 <enter>
+===============================
+4
+>>>
+================================
