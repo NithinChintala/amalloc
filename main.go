@@ -6,10 +6,10 @@ import (
 )
 
 func main() {
-	log.SetFlags(log.Flags() & ^log.Ldate)
+	log.SetFlags(log.Flags() & ^(log.Ldate | log.Ltime))
 	h := memsim.NewHeap()
 	h.Malloc(1)
-	h.Step()
-	h.Step()
-	h.Step()
+	for {
+		h.Step()
+	}
 }

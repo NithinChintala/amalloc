@@ -2,6 +2,7 @@ package memsim
 
 import (
 	"log"
+	"fmt"
 )
 
 // FSM States
@@ -9,7 +10,7 @@ const (
 	Idle = iota
 	Split
 	CheckAvail
-	RemoveCell
+	SetHead
 	ValSet
 	FreeSet
 	BuddyChk
@@ -19,13 +20,12 @@ const (
 )
 
 const (
-	// Why 255? Since I store the next pointer as on offset [0, 1 <<4]
-	// in a uint8, 255 was the next best after 0, 255 = 0b11111111
-	NullPtr = 255
+	NullPtr = 0b00011111 // 31
 
-	HdrSize = 1
-	MinPwr  = 1
-	MaxPwr  = 4
+	HdrSize  = 1
+	CellSize = 2
+	MinPwr   = 1
+	MaxPwr   = 4
 	NumSlots = MaxPwr - MinPwr + 1
 )
 
@@ -34,24 +34,16 @@ const (
 	Type = "type"
 	Slot = "slot"
 	Want = "want"
+	Loc = "loc"
 )
 
 type Heap struct {
-	mem     []byte
-	heads   []uint
-	state   map[string]int
+	mem   []byte
+	heads []uint
+	state map[string]uint
 }
 
-type Cell struct {
-	used bool
-	slot uint
-	next uint
-}
-
-type Header struct {
-	used bool
-	slot uint
-}
+type Pointer uint8
 
 func NewHeap() *Heap {
 	h := Heap{}
@@ -64,12 +56,13 @@ func NewHeap() *Heap {
 		h.heads[i] = NullPtr
 	}
 	// Largest level's head always starts at the beginning
-	h.heads[NumSlots - 1] = 0
+	h.heads[NumSlots-1] = 0
 	// TODO write a insertCell func
-	h.mem[0] = 0b10000011
+	h.mem[0] = 0b01111111
 	h.mem[1] = NullPtr
+	//h.insertCell(0, MaxPwr)
 
-	h.state = make(map[string]int)
+	h.state = make(map[string]uint)
 	h.state[Type] = Idle
 
 	return &h
@@ -83,11 +76,13 @@ func (h *Heap) Step() {
 		// Do nothing if Idle
 		return
 	case Split:
+		h.split()
 		return
 	case CheckAvail:
 		h.checkAvail()
 		return
-	case RemoveCell:
+	case SetHead:
+		h.setHead()
 		return
 	case ValSet:
 		return
@@ -108,8 +103,8 @@ func (h *Heap) Step() {
 // Returns an error if heap is out of memory
 func (h *Heap) Malloc(size uint) {
 	var maxMalloc uint = 1 << MaxPwr
-	if size < 1 || size > maxMalloc {
-		log.Fatalf("Malloc(%d) is invalid, 0 < size <= %d", size, maxMalloc)
+	if size < 1 || size >= maxMalloc {
+		log.Fatalf("Malloc(%d) is invalid, 0 < size < %d", size, maxMalloc)
 	}
 	log.Printf("Malloc(%d)\n", size)
 
@@ -118,20 +113,20 @@ func (h *Heap) Malloc(size uint) {
 
 	h.resetState()
 	h.state[Type] = CheckAvail
-	h.state[Slot] = int(slot)
-	h.state[Want] = int(slot)
+	h.state[Slot] = slot
+	h.state[Want] = slot
 }
 
 func (h *Heap) checkAvail() {
 	slot := h.state[Slot]
 	want := h.state[Want]
-	idx := slotToIdx(uint(slot))
+	idx := slotToIdx(slot)
 	log.Printf("checkAvail() %v\n", h)
 	h.resetState()
 	if h.heads[idx] != NullPtr {
 		if slot == want {
 			// Found a cell that we wanted; remove it
-			h.state[Type] = RemoveCell
+			h.state[Type] = SetHead
 			h.state[Slot] = slot
 		} else {
 			// Need to split
@@ -156,35 +151,107 @@ func (h *Heap) split() {
 	log.Printf("split() %v\n", h)
 	h.resetState()
 
-	idx := slotToIdx(uint(slot))
+	idx := slotToIdx(slot)
 	loc := h.heads[idx]
 	newSlot := slot - 1
 	var shift uint = 1 << newSlot
 
-	h.removeCell(slot)
-	h.insertCell(loc + shift, newSlot)
-
+	h.removeCell(loc)
+	h.insertCell(loc+shift, newSlot)
+	h.insertCell(loc, newSlot)
 	if newSlot == want {
 		// Split to desired slot
-		h.state[Type] = Idle
+		h.state[Type] = SetHead
+		h.state[Slot] = want
+		h.state[Loc] = loc
 	} else {
 		// Still need to split more
 		h.state[Type] = Split
-		h.state[Slot] = int(newSlot)
-		h.state[Want] = int(want)
+		h.state[Slot] = newSlot
+		h.state[Want] = want
 	}
 }
 
-// Should always be removing from head???
-func (h *Heap) removeCell(slot uint) {
+func (h *Heap) setHead() {
+}
+
+// Update the pointers in the cell free list
+func (h *Heap) removeCell(loc uint) {
+	log.Printf("before removeCell(%d) %v\n", loc, h)
+	oldCell := h.readCell(loc)
+	idx := slotToIdx(oldCell.slot)
+
+	if oldCell.prev == NullPtr {
+	// Front of free list
+		if oldCell.next == NullPtr {
+		// singelton list
+			log.Println("singleton list")
+			h.heads[idx] = NullPtr
+		} else {
+		// front of list len > 1
+			log.Println("front, len > 1")
+			fmt.Println(oldCell)
+			newFront := h.readCell(oldCell.next)
+			newFront.prev = NullPtr
+			h.writeCell(oldCell.next, newFront)
+			h.heads[idx] = oldCell.next
+		}
+	} else if oldCell.next == NullPtr {
+	// At end of list len > 1
+		log.Println("end, len > 1")
+		prevCell := h.readCell(oldCell.prev)
+		prevCell.next = oldCell.next
+		h.writeCell(oldCell.prev, prevCell)
+	} else {
+	/// At Middle of list
+		log.Println("middle")
+		prevCell := h.readCell(oldCell.prev)
+		nextCell := h.readCell(oldCell.next)
+
+		prevCell.next = oldCell.next
+		nextCell.prev = oldCell.prev
+
+		h.writeCell(oldCell.prev, prevCell)
+		h.writeCell(nextCell.prev, nextCell)
+	}
+	// Do this?
+	// oldCell.used = true
+	//h.writeCell(loc, oldCell)
+	log.Printf("after removeCell(%d) %v\n", loc, h)
 }
 
 func (h *Heap) insertCell(loc, slot uint) {
+	log.Printf("before insertCell(loc=%d, slot=%d) %v\n", loc, slot, h)
+	idx := slotToIdx(slot)
+	newCell := Cell{}
+	newCell.slot = slot
+	newCell.used = false
 
+	buddyLoc := h.getBuddy(loc)
+	// Found a buddy, merge them + recursively insert
+	if buddyLoc != NullPtr {
+	// TOOD
+	}
+	if oldFrontLoc := h.heads[idx]; oldFrontLoc != NullPtr {
+	// The slot has something
+		oldFront := h.readCell(oldFrontLoc)
+		oldFront.prev = loc
+
+		newCell.prev = NullPtr
+		newCell.next = oldFrontLoc
+
+		h.writeCell(oldFrontLoc, oldFront)
+	} else {
+	// The slot is empty
+		newCell.prev = NullPtr
+		newCell.next = NullPtr
+	}
+	h.writeCell(loc, newCell)
+	h.heads[idx] = loc
+	log.Printf("after insertCell(loc=%d, slot=%d) %v\n", loc, slot, h)
 }
 
-
-func (h *Heap) Free(pointer int) {
+func (h *Heap) Free(p int) {
 
 }
 
@@ -194,16 +261,23 @@ func (h *Heap) resetState() {
 	}
 }
 
-func minPower2(x uint) uint {
-	var power uint = 0
-	var curr uint = 1
-	for curr <= x {
-		power++
-		curr <<= 1
+func (h *Heap) getBuddy(loc uint) uint {
+	hdr := h.readHeader(loc)
+	if hdr.slot >= MaxPwr {
+		// MaxPwr slot has not buddies
+		return NullPtr
 	}
-	return power
+	buddyLoc := loc ^ (1 << hdr.slot)
+	buddy := h.readHeader(buddyLoc)
+	if !buddy.used && buddy.slot == hdr.slot {
+		// Found the buddy, has same size + is not used
+		return buddyLoc
+	}
+	// Buddy is currently being used
+	return NullPtr
 }
 
-func slotToIdx(slot uint) uint {
-	return slot - MinPwr
+func (h *Heap) logJustify(format string, a ...interface{}) {
+	ctx := fmt.Sprintf("%-20s", fmt.Sprintf(format, a...))
+	log.Printf("%s %v\n", ctx, h)
 }
