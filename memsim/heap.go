@@ -157,8 +157,10 @@ func (h *Heap) split() {
 	var shift uint = 1 << newSlot
 
 	h.removeCell(loc)
-	h.insertCell(loc+shift, newSlot)
-	h.insertCell(loc, newSlot)
+	// TODO when you insert have to figure something out to not make these merge
+	// immediately, probably just set the first cell to be "used"
+	h.insertCell(loc+shift, newSlot, false)
+	h.insertCell(loc, newSlot, true)
 	if newSlot == want {
 		// Split to desired slot
 		h.state[Type] = SetHead
@@ -220,12 +222,12 @@ func (h *Heap) removeCell(loc uint) {
 	log.Printf("after removeCell(%d) %v\n", loc, h)
 }
 
-func (h *Heap) insertCell(loc, slot uint) {
-	log.Printf("before insertCell(loc=%d, slot=%d) %v\n", loc, slot, h)
+func (h *Heap) insertCell(loc, slot uint, used bool) {
+	log.Printf("before insertCell(loc=%d, slot=%d, used=%t) %v\n", loc, slot, used, h)
 	idx := slotToIdx(slot)
 	newCell := Cell{}
 	newCell.slot = slot
-	newCell.used = false
+	newCell.used = used
 
 	buddyLoc := h.getBuddy(loc)
 	// Found a buddy, merge them + recursively insert
@@ -248,7 +250,7 @@ func (h *Heap) insertCell(loc, slot uint) {
 	}
 	h.writeCell(loc, newCell)
 	h.heads[idx] = loc
-	log.Printf("after insertCell(loc=%d, slot=%d) %v\n", loc, slot, h)
+	log.Printf("after insertCell(loc=%d, slot=%d, used=%t) %v\n", loc, slot, used, h)
 }
 
 func (h *Heap) Free(p int) {
