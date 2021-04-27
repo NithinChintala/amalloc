@@ -47,7 +47,7 @@ func (h *Heap) readHeader(loc uint) Header {
 
 func (h *Heap) writeHeader(loc uint, hdr Header) {
 	var byte1 byte = boolToByte(hdr.used) << 7
-	byte1 |= (byte(hdr.slot) << 5)
+	byte1 |= byte(slotToIdx(hdr.slot) << 5)
 
 	h.mem[loc] = byte1
 }

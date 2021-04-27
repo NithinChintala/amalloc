@@ -177,7 +177,7 @@ func (h *Heap) split() {
 }
 
 func (h *Heap) setHead() {
-	log.Printf("setHead() %v\n", h)
+	log.Printf("before setHead() %v\n", h)
 	loc := h.state[Loc]
 	h.resetState()
 
@@ -186,6 +186,7 @@ func (h *Heap) setHead() {
 	hdr.used = true
 	h.writeHeader(loc, hdr)
 	h.state[Type] = Idle
+	log.Printf("after setHead() %v\n", h)
 }
 
 // Update the pointers in the cell free list
