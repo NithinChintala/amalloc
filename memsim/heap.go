@@ -159,6 +159,8 @@ func (h *Heap) split() {
 	h.removeCell(loc)
 	// TODO when you insert have to figure something out to not make these merge
 	// immediately, probably just set the first cell to be "used"
+	// Actually, might just want to manually call a merge() function instead
+	// This feels really bad
 	h.insertCell(loc+shift, newSlot, false)
 	h.insertCell(loc, newSlot, true)
 	if newSlot == want {
@@ -175,6 +177,15 @@ func (h *Heap) split() {
 }
 
 func (h *Heap) setHead() {
+	log.Printf("setHead() %v\n", h)
+	loc := h.state[Loc]
+	h.resetState()
+
+	h.removeCell(loc)
+	hdr := h.readHeader(loc)
+	hdr.used = true
+	h.writeHeader(loc, hdr)
+	h.state[Type] = Idle
 }
 
 // Update the pointers in the cell free list
@@ -192,7 +203,7 @@ func (h *Heap) removeCell(loc uint) {
 		} else {
 		// front of list len > 1
 			log.Println("front, len > 1")
-			fmt.Println(oldCell)
+			//fmt.Println(oldCell)
 			newFront := h.readCell(oldCell.next)
 			newFront.prev = NullPtr
 			h.writeCell(oldCell.next, newFront)
@@ -229,11 +240,12 @@ func (h *Heap) insertCell(loc, slot uint, used bool) {
 	newCell.slot = slot
 	newCell.used = used
 
+	/*
 	buddyLoc := h.getBuddy(loc)
 	// Found a buddy, merge them + recursively insert
 	if buddyLoc != NullPtr {
-	// TOOD
 	}
+	*/
 	if oldFrontLoc := h.heads[idx]; oldFrontLoc != NullPtr {
 	// The slot has something
 		oldFront := h.readCell(oldFrontLoc)
@@ -251,6 +263,10 @@ func (h *Heap) insertCell(loc, slot uint, used bool) {
 	h.writeCell(loc, newCell)
 	h.heads[idx] = loc
 	log.Printf("after insertCell(loc=%d, slot=%d, used=%t) %v\n", loc, slot, used, h)
+}
+
+func (h *Heap) insertCellMerge() {
+
 }
 
 func (h *Heap) Free(p int) {

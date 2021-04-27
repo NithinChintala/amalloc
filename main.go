@@ -5,11 +5,16 @@ import (
 	"log"
 )
 
+type DevNull struct {
+}
+
+func (dn *DevNull) Write(p []byte) (n int, err error) {
+	return 0, nil
+}
 func main() {
-	log.SetFlags(log.Flags() & ^(log.Ldate | log.Ltime))
+	//log.SetFlags(log.Flags() & ^(log.Ldate | log.Ltime))
+	log.SetOutput(&DevNull{})
 	h := memsim.NewHeap()
 	h.Malloc(1)
-	for {
-		h.Step()
-	}
+	memsim.Anim(h)
 }

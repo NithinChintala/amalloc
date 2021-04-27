@@ -40,7 +40,7 @@ func (h *Heap) readHeader(loc uint) Header {
 
 	hdr := Header{}
 	hdr.used = byteToBool(byte1 & (1 << 7))
-	hdr.slot = uint((byte1 & 0b01100000) >> 5)
+	hdr.slot = idxToSlot(uint((byte1 & 0b01100000) >> 5))
 
 	return hdr
 }
