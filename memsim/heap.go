@@ -41,6 +41,7 @@ type Heap struct {
 	mem   []byte
 	heads []uint
 	state map[string]uint
+	prevState map[string]uint
 }
 
 type Pointer uint8
@@ -63,7 +64,9 @@ func NewHeap() *Heap {
 	//h.insertCell(0, MaxPwr)
 
 	h.state = make(map[string]uint)
+	h.prevState = make(map[string]uint)
 	h.state[Type] = Idle
+	h.prevState[Type] = Idle
 
 	return &h
 }
@@ -275,7 +278,11 @@ func (h *Heap) Free(p int) {
 }
 
 func (h *Heap) resetState() {
-	for k := range h.state {
+	for k := range h.prevState {
+		delete(h.prevState, k)
+	}
+	for k, v := range h.state {
+		h.prevState[k] = v
 		delete(h.state, k)
 	}
 }
