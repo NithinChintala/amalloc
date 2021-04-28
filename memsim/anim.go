@@ -5,6 +5,8 @@ import (
 	"strings"
 	"strconv"
 	_ "time"
+
+	"github.com/NithinChintala/ascii-malloc/color"
 )
 
 const (
@@ -21,8 +23,10 @@ const (
 )
 
 var (
-	Blank = strings.Repeat(" ", 8)
+	BlankByte = strings.Repeat(" ", 8)
+	BlankAnno = strings.Repeat(" ", 3)
 	SetByte = strings.Repeat("v", 8)
+	PointDown = "↓" + strings.Repeat(" ", 7)
 )
 
 // Format:
@@ -51,10 +55,19 @@ func Render(h *Heap) {
 		mat[i] = make([]string, LPad + (1 << MaxPwr))
 	}
 
+	// Set everything to blank initially, fill stuff in as you go
+	for row := range mat {
+		mat[row][0] = BlankAnno
+		for col := LPad; col < len(mat[row]); col++ {
+			mat[row][col] = BlankByte
+		}
+	}
+
 	setMem(h, mat)
 	setAnnotate(h, mat)
 	setState(h, mat)
 
+	// Join cols by spaces, rows by new line
 	rows := make([]string, TPad + MaxPwr + BPad)
 	for i := range rows {
 		rows[i] = strings.Join(mat[i], " ")
@@ -80,18 +93,6 @@ func setMem(h *Heap, mat [][]string) {
 		}
 		curr += 1 << hdr.slot
 	}
-	
-	// Set everything unsets in memory to 8 spaces
-	for i := MaxPwr - 1; i > -1; i-- {
-		var j, row, col uint
-		for ; j < heapSize; j++ {
-			row = TPad + uint(i)
-			col = LPad + j
-			if mat[row][col] == "" {
-				mat[row][col] = Blank
-			}
-		}
-	}
 }
 
 // Set all the annotations in the render. These include:
@@ -101,15 +102,50 @@ func setMem(h *Heap, mat [][]string) {
 func setAnnotate(h *Heap, mat [][]string) {
 	// Add the slot sizes on the left
 	var i uint = TPad
+	var checking, willSplit, found bool
+	var slot uint
+	var str string
 	for ; i < TPad + MaxPwr; i++ {
-		slot := animRowToSlot(i)
-		mat[i][0] = fmt.Sprintf("%2d:", 1 << slot)
+		slot = animRowToSlot(i)
+		str = fmt.Sprintf("%2d:", 1 << slot)
+
+		checking = h.state[Type] == CheckAvail && h.state[Slot] == slot
+		willSplit = h.state[Type] == Split && h.prevState[Type] == CheckAvail && h.prevState[Slot] == slot
+		found = h.state[Type] == SetHead && h.prevState[Type] == CheckAvail && h.prevState[Slot] == slot
+		if checking {
+		// Magenta for checking if this slot has something
+			str = color.Magenta(str)
+		} else if willSplit || found {
+		// Green for when after checking, there is something
+			str = color.Green(str)
+		}
+
+		mat[i][0] = str
+	}
+
+	for i := 0; i < MaxPwr; i++ {
+		slot := idxToSlot(uint(i))
+		if loc := h.heads[i]; loc != NullPtr {
+			mat[slotToAnimRow(slot) - 1][loc + LPad] = PointDown
+			mat[slotToAnimRow(slot) - 2][loc + LPad] = numPad8(1 << slot)
+		}
 	}
 }
 
 // Set anything specific related to h.state
 func setState(h *Heap, mat [][]string) {
-
+	if h.prevState[Type] == Split {
+		slot := h.prevState[Slot]
+		row := slotToAnimRow(slot)
+		col := h.prevState[Loc] + LPad
+		mat[row][col] = PointDown
+		mat[row][col + (1 << (slot - 1))] = PointDown
+	} else if h.prevState[Type] == SetHead {
+		slot := h.prevState[Slot]
+		row := slotToAnimRow(slot) - 1
+		col := h.prevState[Loc] + LPad
+		mat[row][col] = SetByte
+	}
 }
 
 // Have the slots decrease from 16 -> 2
@@ -123,6 +159,10 @@ func animRowToSlot(row uint) uint {
 
 func byteString(b byte) string {
 	return fmt.Sprintf("%08s", strconv.FormatInt(int64(b), 2))
+}
+
+func numPad8(n uint) string {
+	return fmt.Sprintf("%-8d", n)
 }
 
 func Anim(h *Heap) {

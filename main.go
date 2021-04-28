@@ -27,6 +27,6 @@ func debug() {
 func interact() {
 	log.SetOutput(&DevNull{})
 	h := memsim.NewHeap()
-	h.Malloc(1)
+	h.Malloc(7)
 	memsim.Anim(h)
 }

@@ -3,6 +3,7 @@ package memsim
 import (
 	"log"
 	"fmt"
+
 )
 
 // FSM States
@@ -131,11 +132,13 @@ func (h *Heap) checkAvail() {
 			// Found a cell that we wanted; remove it
 			h.state[Type] = SetHead
 			h.state[Slot] = slot
+			h.state[Loc] = h.heads[idx]
 		} else {
 			// Need to split
 			h.state[Type] = Split
 			h.state[Slot] = slot
 			h.state[Want] = want
+			h.state[Loc]  = h.heads[idx]
 		}
 	} else if slot >= MaxPwr {
 		// Reached largest slot, but no head i.e. out of memory
@@ -176,6 +179,7 @@ func (h *Heap) split() {
 		h.state[Type] = Split
 		h.state[Slot] = newSlot
 		h.state[Want] = want
+		h.state[Loc]  = loc
 	}
 }
 
