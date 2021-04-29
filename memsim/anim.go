@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 	"strconv"
-	_ "time"
+	"time"
 
-	"github.com/NithinChintala/ascii-malloc/color"
+	"github.com/NithinChintala/amalloc/color"
 )
 
 const (
-	Clear = "\033[2J\033[0;0H"
 	Origin = "\033[0;0H"
-	//ClearLine = "\033[1K"
+	ClearOrigin = "\033[2J\033[0;0H"
 	ClearLine = "\033[2K"
 	ClearEnd = "\033[0J"
+
 	// Left, Top, Bottom padding
 	LPadLen = 4
 	LPad = 1
@@ -30,7 +30,7 @@ var (
 )
 
 // Format:
-// 	- The output is a 17 col x 8 row
+// 	- The output is 17 col x 8 row
 // 	- The first col is 3 characters long 
 // 	- the next 16 cols are 8 characters long 
 // 	- All columns are space seperated
@@ -165,16 +165,65 @@ func numPad8(n uint) string {
 	return fmt.Sprintf("%-8d", n)
 }
 
-func Anim(h *Heap) {
+func Anim3(h *Heap) {
 	var cmd string
 	count := 0
-	fmt.Print(Clear)
+	fmt.Print(ClearOrigin)
 	for {
 		Render(h)
 		fmt.Printf("\n%s%d %v\n>>> ", ClearEnd, count, h)
 		h.Step()
 		count++
 		fmt.Scanln(&cmd)
-		//time.Sleep(1 * time.Second)
+	}
+}
+
+func Anim(h *Heap) {
+	var cmd string
+	count := 0
+	fmt.Print(ClearOrigin)
+	for {
+		Render(h)
+		fmt.Printf("\n%s%d %v\n>>> ", ClearEnd, count, h)
+		h.Step()
+		count++
+		//fmt.Scanln(&cmd)
+		if h.prevState[Type] == Idle && h.state[Type] == Idle {
+			// Step one more time to Idle
+			time.Sleep(1 * time.Second)
+			Render(h)
+			fmt.Printf("\n%s%d %v\n>>> ", ClearEnd, count, h)
+			fmt.Scanln(&cmd)
+			n, err := strconv.Atoi(cmd)
+			if err != nil {
+				panic(err)
+			}
+			h.Malloc(uint(n))
+		} else {
+			time.Sleep(1 * time.Second)
+		}
+	}
+}
+
+func Anim2(h *Heap) {
+	var cmd string
+	count := 0
+	fmt.Print(ClearOrigin)
+	for {
+		Render(h)
+		fmt.Printf("\n%s%d %v\n>>> ", ClearEnd, count, h)
+		h.Step()
+		count++
+		if h.prevState[Type] == Idle {
+			Render(h)
+			fmt.Scanln(&cmd)
+			n, err := strconv.Atoi(cmd)
+			if err != nil {
+				panic(err)
+			}
+			h.Malloc(uint(n))
+		} else {
+			time.Sleep(1 * time.Second)
+		}
 	}
 }

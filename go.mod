@@ -1,3 +1,3 @@
-module github.com/NithinChintala/ascii-malloc
+module github.com/NithinChintala/amalloc
 
 go 1.15

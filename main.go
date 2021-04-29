@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/NithinChintala/ascii-malloc/memsim"
+	"github.com/NithinChintala/amalloc/memsim"
 	"log"
+	"fmt"
 )
 
 type DevNull struct {
@@ -13,13 +14,20 @@ func (dn *DevNull) Write(p []byte) (n int, err error) {
 }
 func main() {
 	interact()
+	//debug()
 }
 
 func debug() {
 	log.SetFlags(log.Flags() & ^(log.Ldate | log.Ltime))
 	h := memsim.NewHeap()
 	h.Malloc(1)
-	for {
+	for i := 0; i < 8; i++ {
+		fmt.Printf("%d ", i)
+		h.Step()
+	}
+	h.Free(1)
+	for i := 0; i < 8; i++ {
+		fmt.Printf("%d ", i)
 		h.Step()
 	}
 }
@@ -27,6 +35,5 @@ func debug() {
 func interact() {
 	log.SetOutput(&DevNull{})
 	h := memsim.NewHeap()
-	h.Malloc(7)
 	memsim.Anim(h)
 }
