@@ -3,8 +3,10 @@ package memsim
 import (
 	"fmt"
 	"strings"
-	"strconv"
 	"time"
+	"regexp"
+	"bufio"
+	"os"
 
 	"github.com/NithinChintala/amalloc/color"
 )
@@ -27,6 +29,12 @@ var (
 	BlankAnno = strings.Repeat(" ", 3)
 	SetByte = strings.Repeat("v", 8)
 	PointDown = "↓" + strings.Repeat(" ", 7)
+	PointUp = "↑" + strings.Repeat(" ", 7)
+)
+
+// regexs
+var (
+	
 )
 
 // Format:
@@ -130,6 +138,12 @@ func setAnnotate(h *Heap, mat [][]string) {
 			mat[slotToAnimRow(slot) - 2][loc + LPad] = numPad8(1 << slot)
 		}
 	}
+
+	for char, loc := range h.vars {
+		hdr := h.readHeader(loc)
+		mat[slotToAnimRow(hdr.slot) + 1][loc + LPad + 1] = PointUp
+		mat[slotToAnimRow(hdr.slot) + 2][loc + LPad + 1] = fmt.Sprintf("%c", char) + strings.Repeat(" ", 7)
+	}
 }
 
 // Set anything specific related to h.state
@@ -148,82 +162,44 @@ func setState(h *Heap, mat [][]string) {
 	}
 }
 
-// Have the slots decrease from 16 -> 2
-func slotToAnimRow(slot uint) uint {
-	return TPad + MaxPwr - slotToIdx(slot) - 1
-}
-
-func animRowToSlot(row uint) uint {
-	return idxToSlot(TPad + MaxPwr - row - 1)
-}
-
-func byteString(b byte) string {
-	return fmt.Sprintf("%08s", strconv.FormatInt(int64(b), 2))
-}
-
-func numPad8(n uint) string {
-	return fmt.Sprintf("%-8d", n)
-}
-
-func Anim3(h *Heap) {
-	var cmd string
-	count := 0
-	fmt.Print(ClearOrigin)
-	for {
-		Render(h)
-		fmt.Printf("\n%s%d %v\n>>> ", ClearEnd, count, h)
-		h.Step()
-		count++
-		fmt.Scanln(&cmd)
-	}
-}
-
 func Anim(h *Heap) {
-	var cmd string
+	//var cmd string
 	count := 0
 	fmt.Print(ClearOrigin)
+	mallocRegex := regexp.MustCompile(`^([A-Za-z]{1}) = malloc\(([1-9]{1}[0-9]*)\)`)
+	freeRegex := regexp.MustCompile(`^free\(([A-Za-z]{1})\)`)
+	reader := bufio.NewReader(os.Stdin)
 	for {
 		Render(h)
 		fmt.Printf("\n%s%d %v\n>>> ", ClearEnd, count, h)
-		h.Step()
 		count++
-		//fmt.Scanln(&cmd)
 		if h.prevState[Type] == Idle && h.state[Type] == Idle {
-			// Step one more time to Idle
-			time.Sleep(1 * time.Second)
-			Render(h)
-			fmt.Printf("\n%s%d %v\n>>> ", ClearEnd, count, h)
-			fmt.Scanln(&cmd)
-			n, err := strconv.Atoi(cmd)
+		// Wait for a user command
+			cmd, err := reader.ReadString('\n')
 			if err != nil {
-				panic(err)
+				fmt.Println("Issue when reading input")
+				os.Exit(1)
 			}
-			h.Malloc(uint(n))
+			cmd = strings.TrimSuffix(cmd, "\r\n")
+			if mallocRegex.MatchString(cmd) {
+			// <var> = malloc(<size>)
+				parsed := mallocRegex.FindStringSubmatch(cmd)
+				h.Malloc(parsed[1], mustAtoui(parsed[2]))
+			} else if freeRegex.MatchString(cmd) {
+			// free(<var>)
+				fmt.Println(cmd)
+				os.Exit(0)
+			} else {
+			// Bad syntax
+				fmt.Printf("Bad command syntax: '%s'\n", cmd)
+				os.Exit(1)
+			}
 		} else {
+		// Wait for a second and continue
 			time.Sleep(1 * time.Second)
+			h.Step()
 		}
 	}
 }
 
-func Anim2(h *Heap) {
-	var cmd string
-	count := 0
-	fmt.Print(ClearOrigin)
-	for {
-		Render(h)
-		fmt.Printf("\n%s%d %v\n>>> ", ClearEnd, count, h)
-		h.Step()
-		count++
-		if h.prevState[Type] == Idle {
-			Render(h)
-			fmt.Scanln(&cmd)
-			n, err := strconv.Atoi(cmd)
-			if err != nil {
-				panic(err)
-			}
-			h.Malloc(uint(n))
-		} else {
-			time.Sleep(1 * time.Second)
-		}
-	}
-}
+

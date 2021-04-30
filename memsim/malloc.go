@@ -8,6 +8,7 @@ func (h *Heap) checkAvail() {
 	slot := h.state[Slot]
 	want := h.state[Want]
 	idx := slotToIdx(slot)
+	name := h.state[Name]
 	log.Printf("checkAvail() %v\n", h)
 	h.resetState()
 	if h.heads[idx] != NullPtr {
@@ -16,12 +17,14 @@ func (h *Heap) checkAvail() {
 			h.state[Type] = SetHead
 			h.state[Slot] = slot
 			h.state[Loc] = h.heads[idx]
+			h.state[Name] = name
 		} else {
 			// Need to split
 			h.state[Type] = Split
 			h.state[Slot] = slot
 			h.state[Want] = want
 			h.state[Loc]  = h.heads[idx]
+			h.state[Name] = name
 		}
 	} else if slot >= MaxPwr {
 		// Reached largest slot, but no head i.e. out of memory
@@ -31,12 +34,14 @@ func (h *Heap) checkAvail() {
 		h.state[Type] = CheckAvail
 		h.state[Slot] = slot + 1
 		h.state[Want] = want
+		h.state[Name] = name
 	}
 }
 
 func (h *Heap) split() {
 	slot := uint(h.state[Slot])
 	want := uint(h.state[Want])
+	name := h.state[Name]
 	log.Printf("split() %v\n", h)
 	h.resetState()
 
@@ -57,24 +62,29 @@ func (h *Heap) split() {
 		h.state[Type] = SetHead
 		h.state[Slot] = want
 		h.state[Loc] = loc
+		h.state[Name] = name
 	} else {
 		// Still need to split more
 		h.state[Type] = Split
 		h.state[Slot] = newSlot
 		h.state[Want] = want
 		h.state[Loc]  = loc
+		h.state[Name] = name
 	}
 }
 
 func (h *Heap) setHead() {
 	log.Printf("before setHead() %v\n", h)
 	loc := h.state[Loc]
+	name := h.state[Name]
 	h.resetState()
 
 	h.removeCell(loc)
 	hdr := h.readHeader(loc)
 	hdr.used = true
 	h.writeHeader(loc, hdr)
+	
+	h.vars[name] = loc
 	h.state[Type] = Idle
 	log.Printf("after setHead() %v\n", h)
 }

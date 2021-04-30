@@ -35,6 +35,7 @@ const (
 	Want = "want"
 	Loc = "loc"
 	Bdy = "buddy"
+	Name = "name"
 )
 
 type Heap struct {
@@ -42,6 +43,7 @@ type Heap struct {
 	heads []uint
 	state map[string]uint
 	prevState map[string]uint
+	vars map[uint]uint
 }
 
 type Pointer uint8
@@ -65,6 +67,7 @@ func NewHeap() *Heap {
 
 	h.state = make(map[string]uint)
 	h.prevState = make(map[string]uint)
+	h.vars = make(map[uint]uint)
 	h.state[Type] = Idle
 	h.prevState[Type] = Idle
 
@@ -98,8 +101,10 @@ func (h *Heap) Step() {
 		h.buddyChk()
 		return
 	case BuddyFail:
+		h.buddyFail()
 		return
 	case BuddyMerge:
+		h.buddyMerge()
 		return
 	case OutOfMem:
 		return
@@ -108,7 +113,7 @@ func (h *Heap) Step() {
 
 // Malloc allocates `size` amount of memory
 // Returns an error if heap is out of memory
-func (h *Heap) Malloc(size uint) {
+func (h *Heap) Malloc(name string, size uint) {
 	var maxMalloc uint = 1 << MaxPwr
 	if size < 1 || size >= maxMalloc {
 		log.Fatalf("Malloc(%d) is invalid, 0 < size < %d", size, maxMalloc)
@@ -122,6 +127,7 @@ func (h *Heap) Malloc(size uint) {
 	h.state[Type] = CheckAvail
 	h.state[Slot] = slot
 	h.state[Want] = slot
+	h.state[Name] = strToUint(name)
 }
 
 func (h *Heap) Free(p uint) {

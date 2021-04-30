@@ -20,7 +20,7 @@ func main() {
 func debug() {
 	log.SetFlags(log.Flags() & ^(log.Ldate | log.Ltime))
 	h := memsim.NewHeap()
-	h.Malloc(1)
+	h.Malloc("x", 1)
 	for i := 0; i < 8; i++ {
 		fmt.Printf("%d ", i)
 		h.Step()

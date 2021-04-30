@@ -40,10 +40,42 @@ func (h *Heap) buddyChk() {
 		h.state[Type] = BuddyMerge
 		h.state[Loc] = loc
 		h.state[Slot] = hdr.slot
+		h.state[Bdy] = bdy
 	} else {
 	// Buddy is not free
-		h.state[Type] = BuddyMerge
+		h.state[Type] = BuddyFail
 		h.state[Loc] = loc
 		h.state[Slot] = hdr.slot
 	}
+}
+
+func (h *Heap) buddyMerge() {
+	log.Printf("buddyMerge() %v\n", h)
+	loc := h.state[Loc]
+	slot := h.state[Slot]
+	bdy := h.state[Bdy]
+	h.resetState()
+
+	front := uintMin(loc, bdy)
+
+	// remove the buddy, insert them both
+	h.removeCell(bdy)
+	h.insertCell(front, slot + 1, false)
+
+	// Check again if you can merge
+	h.state[Type] = BuddyChk
+	h.state[Loc] = loc
+	h.state[Bdy] = h.getBuddy(front)
+}
+
+func (h *Heap) buddyFail() {
+	// No buddy available, so finally insert the cell in
+	log.Printf("buddyFail() %v\n", h)
+	loc := h.state[Loc]
+	slot := h.state[Slot]
+	h.resetState()
+
+	h.insertCell(loc, slot, false)
+
+	h.state[Type] = Idle
 }

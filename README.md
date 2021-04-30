@@ -35,4 +35,31 @@ $ go run main.go
 ```
 
 # How Does it Work?
+**Header** - 1 byte
+```
+         used         unused
+             \       /
+              \   <--->
+             0b011xxxxx
+                ^^ 
+               /
+              /
+            index
 
+0b01100000 == {used: false, index: 3}
+0b10100000 == {used: true,  index: 1}
+```
+
+**Cell** - 2 bytes
+```
+         used         prev      next
+             \       /         /
+              \   <--->      <--->
+             0b00111111 0bxxx00100
+                ^^        <->
+               /           |
+              /            unused
+            index
+
+[0b00111111, 0b00000100] == {used: false, index: 1, prev: 31, next: 4}
+```
