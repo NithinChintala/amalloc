@@ -1,34 +1,51 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
-	"flag"
+	"time"
 
 	"github.com/NithinChintala/amalloc/memsim"
 )
 
 type DevNull struct{}
+
 func (dn *DevNull) Write(p []byte) (n int, err error) { return 0, nil }
 
 func main() {
-	
-	speed := getSpeed()
-	//interact()
+	interact()
 	//debug()
 }
 
-func getSpeed() string {
+func getSpeed() (string, error) {
 	validSpeeds := []string{"step", "slow", "norm", "fast", "inst"}
 	speedPtr := flag.String("speed", "norm", "The speed of the animation")
 	flag.Parse()
 
 	for _, speed := range validSpeeds {
 		if *speedPtr == speed {
-			return speed
+			return speed, nil
 		}
 	}
-	log.Fatal("Invalid command line arguments")
+	return "", fmt.Errorf("Invalid speed argument: '%s'", *speedPtr)
+}
+
+func getSpeedFunc(speed string) func() {
+	switch speed {
+	case "step":
+		return func() { fmt.Scanln() }
+	case "slow":
+		return func() { time.Sleep(1500 * time.Millisecond) }
+	case "norm":
+		return func() { time.Sleep(1 * time.Second) }
+	case "fast":
+		return func() { time.Sleep(500 * time.Millisecond) }
+	case "inst":
+		return func() {}
+	default:
+		panic(fmt.Sprintf("getSpeedFunc(%s) is invalid\n", speed))
+	}
 }
 
 func debug() {
