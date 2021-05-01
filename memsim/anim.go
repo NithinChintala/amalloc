@@ -30,6 +30,8 @@ var (
 	SetByte = strings.Repeat("v", 8)
 	PointDown = "↓" + strings.Repeat(" ", 7)
 	PointUp = "↑" + strings.Repeat(" ", 7)
+	Check = color.Magenta("???" + strings.Repeat(" ", 5))
+	Fail = color.Red("xxx" + strings.Repeat(" ", 5))
 )
 
 // Format:
@@ -143,17 +145,57 @@ func setAnnotate(h *Heap, mat [][]string) {
 
 // Set anything specific related to h.state
 func setState(h *Heap, mat [][]string) {
-	if h.prevState[Type] == Split {
+	switch h.prevState[Type] {
+	case Split: 
 		slot := h.prevState[Slot]
 		row := slotToAnimRow(slot)
 		col := h.prevState[Loc] + LPad
 		mat[row][col] = PointDown
 		mat[row][col + (1 << (slot - 1))] = PointDown
-	} else if h.prevState[Type] == SetHead {
+	case SetHead:
+		fallthrough
+	case FreeSet:
 		slot := h.prevState[Slot]
 		row := slotToAnimRow(slot) - 1
 		col := h.prevState[Loc] + LPad
 		mat[row][col] = SetByte
+	case BuddyChk:
+		var row, col uint
+		loc := h.prevState[Loc]
+		hdr := h.readHeader(loc)
+		row = slotToAnimRow(hdr.slot) - 1
+		col = loc + LPad
+		mat[row][col] = Check
+
+		bdy := h.prevState[Bdy]
+		if bdy != NullPtr {
+			buddy := h.readHeader(bdy)
+			row = slotToAnimRow(buddy.slot) - 1
+			col = bdy + LPad
+			mat[row][col] = Check
+		}
+	case BuddyMerge:
+		loc := h.prevState[Loc]
+		slot := h.prevState[Slot]
+		bdy := h.prevState[Bdy]
+
+		row := slotToAnimRow(slot)
+		mat[row][loc + LPad] = color.Green(PointUp)
+		mat[row][bdy + LPad] = color.Green(PointUp)
+
+	case BuddyFail:
+		var row, col uint
+		loc := h.prevState[Loc]
+		hdr := h.readHeader(loc)
+		row = slotToAnimRow(hdr.slot) - 1
+		col = loc + LPad
+		mat[row][col] = Fail
+
+		bdy := h.prevState[Bdy]
+		buddy := h.readHeader(bdy)
+		row = slotToAnimRow(buddy.slot) - 1
+		col = bdy + LPad
+		mat[row][col] = Fail
 	}
 }
 
@@ -185,6 +227,7 @@ func Anim(h *Heap) {
 			// free(<var>)
 				parsed := freeRegex.FindStringSubmatch(cmd)
 				h.Free(parsed[1])
+				h.Step()
 			} else if setValRegex.MatchString(cmd) {
 			// <var> = <val>					
 				fmt.Println(cmd)
@@ -200,6 +243,7 @@ func Anim(h *Heap) {
 			}
 		} else {
 		// Wait for a second and continue
+			//time.Sleep(600 * time.Millisecond)
 			time.Sleep(1 * time.Second)
 			//reader.ReadString('\n')
 			h.Step()

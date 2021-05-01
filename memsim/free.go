@@ -31,6 +31,7 @@ func (h *Heap) buddyChk() {
 	if bdy == NullPtr {
 		h.state[Type] = BuddyFail
 		h.state[Loc] = loc
+		h.state[Bdy] = loc
 		h.state[Slot] = hdr.slot
 		return
 	}
@@ -45,6 +46,9 @@ func (h *Heap) buddyChk() {
 	} else {
 	// Buddy is not free
 		h.state[Type] = BuddyFail
+		h.state[Loc] = loc
+		h.state[Bdy] = bdy
+		h.state[Slot] = hdr.slot
 	}
 }
 

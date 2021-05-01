@@ -140,5 +140,6 @@ func (h *Heap) Free(variable string) {
 	h.resetState()
 	h.state[Type] = FreeSet
 	h.state[Loc] = p - 1
+	h.state[Slot] = h.readHeader(p - 1).slot
 	h.state[Name] = strToUint(variable)
 }
