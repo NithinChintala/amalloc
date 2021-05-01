@@ -1,43 +1,43 @@
 package memsim
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"regexp"
 	"strings"
 	"time"
-	"regexp"
-	"bufio"
-	"os"
 
 	"github.com/NithinChintala/amalloc/color"
 )
 
 const (
-	Origin = "\033[0;0H"
+	Origin      = "\033[0;0H"
 	ClearOrigin = "\033[2J\033[0;0H"
-	ClearLine = "\033[2K"
-	ClearEnd = "\033[0J"
+	ClearLine   = "\033[2K"
+	ClearEnd    = "\033[0J"
 
 	// Left, Top, Bottom padding
 	LPadLen = 4
-	LPad = 1
-	TPad = 2
-	BPad = 2
+	LPad    = 1
+	TPad    = 2
+	BPad    = 2
 )
 
 var (
 	BlankByte = strings.Repeat(" ", 8)
 	BlankAnno = strings.Repeat(" ", 3)
-	SetByte = strings.Repeat("v", 8)
+	SetByte   = strings.Repeat("v", 8)
 	PointDown = "↓" + strings.Repeat(" ", 7)
-	PointUp = "↑" + strings.Repeat(" ", 7)
-	Check = color.Magenta("???" + strings.Repeat(" ", 5))
-	Fail = color.Red("xxx" + strings.Repeat(" ", 5))
+	PointUp   = "↑" + strings.Repeat(" ", 7)
+	Check     = color.Magenta("???" + strings.Repeat(" ", 5))
+	Fail      = color.Red("xxx" + strings.Repeat(" ", 5))
 )
 
 // Format:
 // 	- The output is 17 col x 8 row
-// 	- The first col is 3 characters long 
-// 	- the next 16 cols are 8 characters long 
+// 	- The first col is 3 characters long
+// 	- the next 16 cols are 8 characters long
 // 	- All columns are space seperated
 // 	- All rows are new line seperated
 // 	- Below is an example format
@@ -55,9 +55,9 @@ var (
 // Renders a the current state of the heap
 func Render(h *Heap) {
 	// Initialize the rendering matrix
-	mat := make([][]string, TPad + MaxPwr + BPad)
+	mat := make([][]string, TPad+MaxPwr+BPad)
 	for i := range mat {
-		mat[i] = make([]string, LPad + (1 << MaxPwr))
+		mat[i] = make([]string, LPad+(1<<MaxPwr))
 	}
 
 	// Set everything to blank initially, fill stuff in as you go
@@ -73,7 +73,7 @@ func Render(h *Heap) {
 	setState(h, mat)
 
 	// Join cols by spaces, rows by new line
-	rows := make([]string, TPad + MaxPwr + BPad)
+	rows := make([]string, TPad+MaxPwr+BPad)
 	for i := range rows {
 		rows[i] = strings.Join(mat[i], " ")
 	}
@@ -91,10 +91,10 @@ func setMem(h *Heap, mat [][]string) {
 	for curr < heapSize {
 		hdr = h.readHeader(curr)
 		var i, row, col uint
-		for ; i < 1 << hdr.slot; i++ {
+		for ; i < 1<<hdr.slot; i++ {
 			row = slotToAnimRow(hdr.slot)
 			col = curr + i + LPad
-			mat[row][col] = byteString(h.mem[curr + i])
+			mat[row][col] = byteString(h.mem[curr+i])
 		}
 		curr += 1 << hdr.slot
 	}
@@ -110,18 +110,18 @@ func setAnnotate(h *Heap, mat [][]string) {
 	var checking, willSplit, found bool
 	var slot uint
 	var str string
-	for ; i < TPad + MaxPwr; i++ {
+	for ; i < TPad+MaxPwr; i++ {
 		slot = animRowToSlot(i)
-		str = fmt.Sprintf("%2d:", 1 << slot)
+		str = fmt.Sprintf("%2d:", 1<<slot)
 
 		checking = h.state[Type] == CheckAvail && h.state[Slot] == slot
 		willSplit = h.state[Type] == Split && h.prevState[Type] == CheckAvail && h.prevState[Slot] == slot
 		found = h.state[Type] == SetHead && h.prevState[Type] == CheckAvail && h.prevState[Slot] == slot
 		if checking {
-		// Magenta for checking if this slot has something
+			// Magenta for checking if this slot has something
 			str = color.Magenta(str)
 		} else if willSplit || found {
-		// Green for when after checking, there is something
+			// Green for when after checking, there is something
 			str = color.Green(str)
 		}
 
@@ -131,27 +131,27 @@ func setAnnotate(h *Heap, mat [][]string) {
 	for i := 0; i < MaxPwr; i++ {
 		slot := idxToSlot(uint(i))
 		if loc := h.heads[i]; loc != NullPtr {
-			mat[slotToAnimRow(slot) - 1][loc + LPad] = PointDown
-			mat[slotToAnimRow(slot) - 2][loc + LPad] = numPad8(1 << slot)
+			mat[slotToAnimRow(slot)-1][loc+LPad] = PointDown
+			mat[slotToAnimRow(slot)-2][loc+LPad] = numPad8(1 << slot)
 		}
 	}
 
 	for char, loc := range h.vars {
 		hdr := h.readHeader(loc - 1)
-		mat[slotToAnimRow(hdr.slot) + 1][loc + LPad] = PointUp
-		mat[slotToAnimRow(hdr.slot) + 2][loc + LPad] = fmt.Sprintf("%c", char) + strings.Repeat(" ", 7)
+		mat[slotToAnimRow(hdr.slot)+1][loc+LPad] = PointUp
+		mat[slotToAnimRow(hdr.slot)+2][loc+LPad] = fmt.Sprintf("%c", char) + strings.Repeat(" ", 7)
 	}
 }
 
 // Set anything specific related to h.state
 func setState(h *Heap, mat [][]string) {
 	switch h.prevState[Type] {
-	case Split: 
+	case Split:
 		slot := h.prevState[Slot]
 		row := slotToAnimRow(slot)
 		col := h.prevState[Loc] + LPad
 		mat[row][col] = PointDown
-		mat[row][col + (1 << (slot - 1))] = PointDown
+		mat[row][col+(1<<(slot-1))] = PointDown
 	case SetHead:
 		fallthrough
 	case FreeSet:
@@ -180,8 +180,8 @@ func setState(h *Heap, mat [][]string) {
 		bdy := h.prevState[Bdy]
 
 		row := slotToAnimRow(slot)
-		mat[row][loc + LPad] = color.Green(PointUp)
-		mat[row][bdy + LPad] = color.Green(PointUp)
+		mat[row][loc+LPad] = color.Green(PointUp)
+		mat[row][bdy+LPad] = color.Green(PointUp)
 
 	case BuddyFail:
 		var row, col uint
@@ -212,7 +212,7 @@ func Anim(h *Heap) {
 		fmt.Printf("\n%s%d %v\n>>> ", ClearEnd, count, h)
 		count++
 		if h.prevState[Type] == Idle && h.state[Type] == Idle {
-		// Wait for a user command
+			// Wait for a user command
 			cmd, err := reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Issue when reading input")
@@ -220,29 +220,29 @@ func Anim(h *Heap) {
 			}
 			cmd = strings.TrimSuffix(cmd, "\r\n")
 			if mallocRegex.MatchString(cmd) {
-			// <var> = malloc(<size>)
+				// <var> = malloc(<size>)
 				parsed := mallocRegex.FindStringSubmatch(cmd)
 				h.Malloc(parsed[1], mustAtoui(parsed[2]))
 			} else if freeRegex.MatchString(cmd) {
-			// free(<var>)
+				// free(<var>)
 				parsed := freeRegex.FindStringSubmatch(cmd)
 				h.Free(parsed[1])
 				h.Step()
 			} else if setValRegex.MatchString(cmd) {
-			// <var> = <val>					
+				// <var> = <val>
 				fmt.Println(cmd)
 				os.Exit(0)
 			} else if getValRegex.MatchString(cmd) {
-			// <var>
+				// <var>
 				fmt.Println(cmd)
 				os.Exit(0)
 			} else {
-			// Bad syntax
+				// Bad syntax
 				fmt.Printf("Bad command syntax: '%s'\n", cmd)
 				os.Exit(1)
 			}
 		} else {
-		// Wait for a second and continue
+			// Wait for a second and continue
 			//time.Sleep(600 * time.Millisecond)
 			time.Sleep(1 * time.Second)
 			//reader.ReadString('\n')

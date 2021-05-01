@@ -22,7 +22,7 @@ func slotToIdx(slot uint) uint {
 }
 
 // Converts the index of something in the slice to
-// the appropriate slot 
+// the appropriate slot
 func idxToSlot(idx uint) uint {
 	return idx + MinPwr
 }
@@ -73,6 +73,7 @@ func numPad8(n uint) string {
 	return fmt.Sprintf("%-8d", n)
 }
 
+// Converts the strings to an unsigned int, panics otherwise
 func mustAtoui(s string) uint {
 	n, err := strconv.Atoi(s)
 	if err != nil {

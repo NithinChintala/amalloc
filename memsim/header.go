@@ -14,7 +14,7 @@ type Header struct {
 
 func (h *Heap) readCell(loc uint) Cell {
 	byte1 := h.mem[loc]
-	byte2 := h.mem[loc + 1]
+	byte2 := h.mem[loc+1]
 
 	c := Cell{}
 	c.used = byteToBool(byte1 & (1 << 7))
@@ -32,7 +32,7 @@ func (h *Heap) writeCell(loc uint, c Cell) {
 
 	byte2 := byte(c.next)
 	h.mem[loc] = byte1
-	h.mem[loc + 1] = byte2
+	h.mem[loc+1] = byte2
 }
 
 func (h *Heap) readHeader(loc uint) Header {
@@ -51,5 +51,3 @@ func (h *Heap) writeHeader(loc uint, hdr Header) {
 
 	h.mem[loc] = byte1
 }
-
-

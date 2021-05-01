@@ -33,17 +33,17 @@ const (
 	Type = "type"
 	Slot = "slot"
 	Want = "want"
-	Loc = "loc"
-	Bdy = "buddy"
+	Loc  = "loc"
+	Bdy  = "buddy"
 	Name = "name"
 )
 
 type Heap struct {
-	mem   []byte
-	heads []uint
-	state map[string]uint
+	mem       []byte
+	heads     []uint
+	state     map[string]uint
 	prevState map[string]uint
-	vars map[uint]uint
+	vars      map[uint]uint
 }
 
 type Pointer uint8

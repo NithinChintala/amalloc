@@ -11,13 +11,13 @@ func (h *Heap) removeCell(loc uint) {
 	idx := slotToIdx(oldCell.slot)
 
 	if oldCell.prev == NullPtr {
-	// Front of free list
+		// Front of free list
 		if oldCell.next == NullPtr {
-		// singelton list
+			// singelton list
 			//log.Println("singleton list")
 			h.heads[idx] = NullPtr
 		} else {
-		// front of list len > 1
+			// front of list len > 1
 			//log.Println("front, len > 1")
 			//fmt.Println(oldCell)
 			newFront := h.readCell(oldCell.next)
@@ -26,13 +26,13 @@ func (h *Heap) removeCell(loc uint) {
 			h.heads[idx] = oldCell.next
 		}
 	} else if oldCell.next == NullPtr {
-	// At end of list len > 1
+		// At end of list len > 1
 		//log.Println("end, len > 1")
 		prevCell := h.readCell(oldCell.prev)
 		prevCell.next = oldCell.next
 		h.writeCell(oldCell.prev, prevCell)
 	} else {
-	/// At Middle of list
+		/// At Middle of list
 		//log.Println("middle")
 		prevCell := h.readCell(oldCell.prev)
 		nextCell := h.readCell(oldCell.next)
@@ -55,9 +55,9 @@ func (h *Heap) insertCell(loc, slot uint, used bool) {
 	newCell := Cell{}
 	newCell.slot = slot
 	newCell.used = used
-	
+
 	if oldFrontLoc := h.heads[idx]; oldFrontLoc != NullPtr {
-	// The slot has something
+		// The slot has something
 		oldFront := h.readCell(oldFrontLoc)
 		oldFront.prev = loc
 
@@ -66,7 +66,7 @@ func (h *Heap) insertCell(loc, slot uint, used bool) {
 
 		h.writeCell(oldFrontLoc, oldFront)
 	} else {
-	// The slot is empty
+		// The slot is empty
 		newCell.prev = NullPtr
 		newCell.next = NullPtr
 	}
@@ -90,7 +90,7 @@ func (h *Heap) resetState() {
 func (h *Heap) getBuddy(loc uint) uint {
 	hdr := h.readHeader(loc)
 	if hdr.slot >= MaxPwr {
-	// MaxPwr slot has not buddies
+		// MaxPwr slot has not buddies
 		return NullPtr
 	}
 	return loc ^ (1 << hdr.slot)

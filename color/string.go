@@ -12,7 +12,7 @@ const (
 
 // ANSI Color codes
 const (
-	black  = iota + 30
+	black = iota + 30
 	red
 	green
 	yellow
@@ -23,7 +23,7 @@ const (
 )
 
 func colSprintf(col int, str string) string {
-	return fmt.Sprintf("%s[%dm%s%s", escape, col, str, reset) 
+	return fmt.Sprintf("%s[%dm%s%s", escape, col, str, reset)
 }
 
 func Red(str string) string {

@@ -23,7 +23,7 @@ func (h *Heap) checkAvail() {
 			h.state[Type] = Split
 			h.state[Slot] = slot
 			h.state[Want] = want
-			h.state[Loc]  = h.heads[idx]
+			h.state[Loc] = h.heads[idx]
 			h.state[Name] = name
 		}
 	} else if slot >= MaxPwr {
@@ -68,7 +68,7 @@ func (h *Heap) split() {
 		h.state[Type] = Split
 		h.state[Slot] = newSlot
 		h.state[Want] = want
-		h.state[Loc]  = loc
+		h.state[Loc] = loc
 		h.state[Name] = name
 	}
 }
@@ -83,7 +83,7 @@ func (h *Heap) setHead() {
 	hdr := h.readHeader(loc)
 	hdr.used = true
 	h.writeHeader(loc, hdr)
-	
+
 	h.vars[name] = loc + 1
 	h.state[Type] = Idle
 	log.Printf("after setHead() %v\n", h)
