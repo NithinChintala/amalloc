@@ -20,7 +20,7 @@ func main() {
 
 func getSpeed() (string, error) {
 	validSpeeds := []string{"step", "slow", "norm", "fast", "inst"}
-	speedPtr := flag.String("speed", "norm", "The speed of the animation")
+	speedPtr := flag.String("speed", "norm", "The speed of the animation: step|slow|norm|fast|inst")
 	flag.Parse()
 
 	for _, speed := range validSpeeds {
@@ -48,6 +48,17 @@ func getSpeedFunc(speed string) func() {
 	}
 }
 
+func interact() {
+	speed, err := getSpeed()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.SetOutput(&DevNull{})
+	h := memsim.NewHeap()
+	waitFunc := getSpeedFunc(speed)
+	memsim.Anim(h, waitFunc)
+}
+
 func debug() {
 	log.SetFlags(log.Flags() & ^(log.Ldate | log.Ltime))
 	h := memsim.NewHeap()
@@ -61,10 +72,4 @@ func debug() {
 		fmt.Printf("%d ", i)
 		h.Step()
 	}
-}
-
-func interact() {
-	log.SetOutput(&DevNull{})
-	h := memsim.NewHeap()
-	memsim.Anim(h)
 }

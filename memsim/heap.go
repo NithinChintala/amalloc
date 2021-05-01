@@ -46,8 +46,6 @@ type Heap struct {
 	vars      map[uint]uint
 }
 
-type Pointer uint8
-
 func NewHeap() *Heap {
 	h := Heap{}
 	h.mem = make([]byte, 1<<MaxPwr)

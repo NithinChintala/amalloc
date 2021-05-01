@@ -6,7 +6,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/NithinChintala/amalloc/color"
 )
@@ -199,7 +198,7 @@ func setState(h *Heap, mat [][]string) {
 	}
 }
 
-func Anim(h *Heap) {
+func Anim(h *Heap, waitFunc func()) {
 	count := 0
 	fmt.Print(ClearOrigin)
 	mallocRegex := regexp.MustCompile(`^([A-Za-z]{1}) = malloc\(([1-9]{1}[0-9]*)\)`)
@@ -243,9 +242,7 @@ func Anim(h *Heap) {
 			}
 		} else {
 			// Wait for a second and continue
-			//time.Sleep(600 * time.Millisecond)
-			time.Sleep(1 * time.Second)
-			//reader.ReadString('\n')
+			waitFunc()
 			h.Step()
 		}
 	}
