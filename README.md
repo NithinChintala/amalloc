@@ -63,3 +63,5 @@ $ go run main.go
 
 [0b00111111, 0b00000100] == {used: false, index: 1, prev: 31, next: 4}
 ```
+
+![](fsm.png)

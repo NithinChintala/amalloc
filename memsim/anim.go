@@ -31,6 +31,11 @@ var (
 	PointUp   = "↑" + strings.Repeat(" ", 7)
 	Check     = color.Magenta("???" + strings.Repeat(" ", 5))
 	Fail      = color.Red("xxx" + strings.Repeat(" ", 5))
+
+	mallocRegex = regexp.MustCompile(`^([A-Za-z]{1}) = malloc\(([1-9]{1}[0-9]*)\)`)
+	freeRegex   = regexp.MustCompile(`^free\(([A-Za-z]{1})\)`)
+	setValRegex = regexp.MustCompile(`^([A-Za-z]{1}) = ([1-9]{1}[0-9]*)`)
+	getValRegex = regexp.MustCompile(`^([A-Za-z]{1})`)
 )
 
 // Format:
@@ -117,16 +122,17 @@ func setAnnotate(h *Heap, mat [][]string) {
 		willSplit = h.state[Type] == Split && h.prevState[Type] == CheckAvail && h.prevState[Slot] == slot
 		found = h.state[Type] == SetHead && h.prevState[Type] == CheckAvail && h.prevState[Slot] == slot
 		if checking {
-			// Magenta for checking if this slot has something
+		// Magenta for checking if this slot has something
 			str = color.Magenta(str)
 		} else if willSplit || found {
-			// Green for when after checking, there is something
+		// Green for when after checking, there is something
 			str = color.Green(str)
 		}
 
 		mat[i][0] = str
 	}
 
+	// Render the head pointers
 	for i := 0; i < MaxPwr; i++ {
 		slot := idxToSlot(uint(i))
 		if loc := h.heads[i]; loc != NullPtr {
@@ -135,8 +141,11 @@ func setAnnotate(h *Heap, mat [][]string) {
 		}
 	}
 
+	// Render the variable pointers
 	for char, loc := range h.vars {
 		hdr := h.readHeader(loc - 1)
+		str := mat[slotToAnimRow(hdr.slot)][loc+LPad-1]
+		mat[slotToAnimRow(hdr.slot)][loc+LPad-1] = color.Cyan(str)
 		mat[slotToAnimRow(hdr.slot)+1][loc+LPad] = PointUp
 		mat[slotToAnimRow(hdr.slot)+2][loc+LPad] = fmt.Sprintf("%c", char) + strings.Repeat(" ", 7)
 	}
@@ -201,17 +210,14 @@ func setState(h *Heap, mat [][]string) {
 func Anim(h *Heap, waitFunc func()) {
 	count := 0
 	fmt.Print(ClearOrigin)
-	mallocRegex := regexp.MustCompile(`^([A-Za-z]{1}) = malloc\(([1-9]{1}[0-9]*)\)`)
-	freeRegex := regexp.MustCompile(`^free\(([A-Za-z]{1})\)`)
-	setValRegex := regexp.MustCompile(`^([A-Za-z]{1}) = ([1-9]{1}[0-9]*)`)
-	getValRegex := regexp.MustCompile(`^([A-Za-z]{1})`)
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		Render(h)
-		fmt.Printf("\n%s%d %v\n>>> ", ClearEnd, count, h)
+		//fmt.Printf("\n%sState: %s\nCount: %d\n%v\n>>> ", ClearEnd, h.getPrevState(), count, h)
+		fmt.Printf("\n%sState: %s\nCount: %d\n>>> ", ClearEnd, h.getPrevState(), count)
 		count++
 		if h.prevState[Type] == Idle && h.state[Type] == Idle {
-			// Wait for a user command
+		// Wait for a user command
 			cmd, err := reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Issue when reading input")
@@ -219,29 +225,29 @@ func Anim(h *Heap, waitFunc func()) {
 			}
 			cmd = strings.TrimSuffix(cmd, "\r\n")
 			if mallocRegex.MatchString(cmd) {
-				// <var> = malloc(<size>)
+			// <var> = malloc(<size>)
 				parsed := mallocRegex.FindStringSubmatch(cmd)
 				h.Malloc(parsed[1], mustAtoui(parsed[2]))
 			} else if freeRegex.MatchString(cmd) {
-				// free(<var>)
+			// free(<var>)
 				parsed := freeRegex.FindStringSubmatch(cmd)
 				h.Free(parsed[1])
 				h.Step()
 			} else if setValRegex.MatchString(cmd) {
-				// <var> = <val>
+			// <var> = <val>
 				fmt.Println(cmd)
 				os.Exit(0)
 			} else if getValRegex.MatchString(cmd) {
-				// <var>
+			// <var>
 				fmt.Println(cmd)
 				os.Exit(0)
 			} else {
-				// Bad syntax
+			// Bad syntax
 				fmt.Printf("Bad command syntax: '%s'\n", cmd)
 				os.Exit(1)
 			}
 		} else {
-			// Wait for a second and continue
+		// Wait with the custom function and then continue
 			waitFunc()
 			h.Step()
 		}

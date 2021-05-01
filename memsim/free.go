@@ -11,7 +11,7 @@ func (h *Heap) freeSet() {
 	h.resetState()
 
 	hdr := h.readHeader(loc)
-	h.insertCell(loc, hdr.slot, false)
+	h.insertCell(loc, hdr.slot)
 	delete(h.vars, name)
 
 	bdy := h.getBuddy(loc)
@@ -38,13 +38,13 @@ func (h *Heap) buddyChk() {
 
 	buddy := h.readHeader(bdy)
 	if !buddy.used && buddy.slot == hdr.slot {
-		// Found the buddy, has same size + is not used
+	// Found the buddy, has same size + is not used
 		h.state[Type] = BuddyMerge
 		h.state[Loc] = loc
 		h.state[Slot] = hdr.slot
 		h.state[Bdy] = bdy
 	} else {
-		// Buddy is not free
+	// Buddy is not free
 		h.state[Type] = BuddyFail
 		h.state[Loc] = loc
 		h.state[Bdy] = bdy
@@ -63,7 +63,7 @@ func (h *Heap) buddyMerge() {
 	// remove them both, insert them merge
 	h.removeCell(loc)
 	h.removeCell(bdy)
-	h.insertCell(front, slot+1, false)
+	h.insertCell(front, slot+1)
 
 	// Check again if you can merge
 	h.state[Type] = BuddyChk

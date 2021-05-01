@@ -2,9 +2,11 @@ package memsim
 
 import (
 	"log"
+	"fmt"
+	"os"
 )
 
-// FSM States
+// Finite State Machine states
 const (
 	Idle = iota
 	Split
@@ -26,9 +28,10 @@ const (
 	MinPwr   = 1
 	MaxPwr   = 4
 	NumSlots = MaxPwr - MinPwr + 1
+	MaxMalloc = (1 << MaxPwr) - HdrSize
 )
 
-// State args
+// Specific type of state args
 const (
 	Type = "type"
 	Slot = "slot"
@@ -56,12 +59,8 @@ func NewHeap() *Heap {
 	for i := range h.heads {
 		h.heads[i] = NullPtr
 	}
-	// Largest level's head always starts at the beginning
-	h.heads[NumSlots-1] = 0
-	// TODO write a insertCell func
-	h.mem[0] = 0b01111111
-	h.mem[1] = NullPtr
-	//h.insertCell(0, MaxPwr)
+	// Insert in the memory
+	h.insertCell(0, MaxPwr)
 
 	h.state = make(map[string]uint)
 	h.prevState = make(map[string]uint)
@@ -72,54 +71,21 @@ func NewHeap() *Heap {
 	return &h
 }
 
-// Steps the malloc simulator one state
-func (h *Heap) Step() {
-	stateType := h.state[Type]
-	switch stateType {
-	case Idle:
-		// Do nothing if Idle
-		h.resetState()
-		h.state[Type] = Idle
-		return
-	case Split:
-		h.split()
-		return
-	case CheckAvail:
-		h.checkAvail()
-		return
-	case SetHead:
-		h.setHead()
-		return
-	case ValSet:
-		return
-	case FreeSet:
-		h.freeSet()
-		return
-	case BuddyChk:
-		h.buddyChk()
-		return
-	case BuddyFail:
-		h.buddyFail()
-		return
-	case BuddyMerge:
-		h.buddyMerge()
-		return
-	case OutOfMem:
-		return
-	}
-}
-
 // Malloc allocates `size` amount of memory
-// Returns an error if heap is out of memory
 func (h *Heap) Malloc(name string, size uint) {
-	var maxMalloc uint = 1 << MaxPwr
-	if size < 1 || size >= maxMalloc {
-		log.Fatalf("Malloc(%d) is invalid, 0 < size < %d", size, maxMalloc)
+	if size < 1 || size > MaxMalloc {
+		fmt.Printf("Malloc(%d) is invalid, 0 < size <= %d\n", size, MaxMalloc)
+		os.Exit(1)
 	}
 	log.Printf("Malloc(%d)\n", size)
 
 	size += HdrSize
 	slot := minPower2(size)
+	char := strToUint(name)
+	if _, ok := h.vars[char]; ok {
+		fmt.Printf("Variable '%c' is already declared\n", char)
+		os.Exit(1)
+	}
 
 	h.resetState()
 	h.state[Type] = CheckAvail
@@ -131,7 +97,8 @@ func (h *Heap) Malloc(name string, size uint) {
 func (h *Heap) Free(variable string) {
 	p, ok := h.vars[strToUint(variable)]
 	if !ok {
-		log.Fatalf("Undeclared variabale given to Free(%s)\n", variable)
+		fmt.Printf("Undeclared variabale given to Free(%s)\n", variable)
+		os.Exit(1)
 	}
 	log.Printf("Free(%s) @ %d\n", variable, p)
 
@@ -140,4 +107,41 @@ func (h *Heap) Free(variable string) {
 	h.state[Loc] = p - 1
 	h.state[Slot] = h.readHeader(p - 1).slot
 	h.state[Name] = strToUint(variable)
+}
+
+// Steps the malloc simulator one state
+func (h *Heap) Step() {
+	switch h.state[Type] {
+	case Idle:
+		h.idle()
+	case Split:
+		h.split()
+	case CheckAvail:
+		h.checkAvail()
+	case SetHead:
+		h.setHead()
+	case ValSet:
+	case FreeSet:
+		h.freeSet()
+	case BuddyChk:
+		h.buddyChk()
+	case BuddyFail:
+		h.buddyFail()
+	case BuddyMerge:
+		h.buddyMerge()
+	case OutOfMem:
+		h.outOfMem()
+	}
+}
+
+// Do nothing, stay idle
+func (h *Heap) idle() {
+	h.resetState()
+	h.state[Type] = Idle
+}
+
+// Crash if out of memory
+func (h *Heap) outOfMem() {
+	fmt.Println("Heap is out of memory")
+	os.Exit(1)
 }

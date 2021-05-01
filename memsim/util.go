@@ -52,6 +52,7 @@ func boolToByte(b bool) byte {
 	return 0
 }
 
+// Gets the equivalent uint for the first char in the string
 func strToUint(s string) uint {
 	return uint([]rune(s)[0])
 }
@@ -61,14 +62,17 @@ func slotToAnimRow(slot uint) uint {
 	return TPad + MaxPwr - slotToIdx(slot) - 1
 }
 
+// Converts the row in the animation frame to a slot
 func animRowToSlot(row uint) uint {
 	return idxToSlot(TPad + MaxPwr - row - 1)
 }
 
+// Converts a byte to a 0 padded string
 func byteString(b byte) string {
 	return fmt.Sprintf("%08s", strconv.FormatInt(int64(b), 2))
 }
 
+// Space pads a number on the left to 8 characters
 func numPad8(n uint) string {
 	return fmt.Sprintf("%-8d", n)
 }

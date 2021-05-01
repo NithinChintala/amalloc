@@ -4,36 +4,30 @@ import (
 	"log"
 )
 
-// Update the pointers in the cell free list
 func (h *Heap) removeCell(loc uint) {
 	log.Printf("removeCell(%d) %v\n", loc, h)
 	oldCell := h.readCell(loc)
 	idx := slotToIdx(oldCell.slot)
 
 	if oldCell.prev == NullPtr {
-		// Front of free list
+	// Front of free list
 		if oldCell.next == NullPtr {
-			// singelton list
-			//log.Println("singleton list")
+		// singelton list
 			h.heads[idx] = NullPtr
 		} else {
-			// front of list len > 1
-			//log.Println("front, len > 1")
-			//fmt.Println(oldCell)
+		// front of list len > 1
 			newFront := h.readCell(oldCell.next)
 			newFront.prev = NullPtr
 			h.writeCell(oldCell.next, newFront)
 			h.heads[idx] = oldCell.next
 		}
 	} else if oldCell.next == NullPtr {
-		// At end of list len > 1
-		//log.Println("end, len > 1")
+	// At end of list len > 1
 		prevCell := h.readCell(oldCell.prev)
 		prevCell.next = oldCell.next
 		h.writeCell(oldCell.prev, prevCell)
 	} else {
-		/// At Middle of list
-		//log.Println("middle")
+	/// At Middle of list
 		prevCell := h.readCell(oldCell.prev)
 		nextCell := h.readCell(oldCell.next)
 
@@ -43,18 +37,14 @@ func (h *Heap) removeCell(loc uint) {
 		h.writeCell(oldCell.prev, prevCell)
 		h.writeCell(nextCell.prev, nextCell)
 	}
-	// Do this?
-	// oldCell.used = true
-	//h.writeCell(loc, oldCell)
-	//log.Printf("after removeCell(%d) %v\n", loc, h)
 }
 
-func (h *Heap) insertCell(loc, slot uint, used bool) {
-	log.Printf("insertCell(loc=%d, slot=%d, used=%t) %v\n", loc, slot, used, h)
+func (h *Heap) insertCell(loc, slot uint) {
+	log.Printf("insertCell(loc=%d, slot=%d) %v\n", loc, slot, h)
 	idx := slotToIdx(slot)
 	newCell := Cell{}
 	newCell.slot = slot
-	newCell.used = used
+	newCell.used = false
 
 	if oldFrontLoc := h.heads[idx]; oldFrontLoc != NullPtr {
 		// The slot has something
@@ -72,10 +62,9 @@ func (h *Heap) insertCell(loc, slot uint, used bool) {
 	}
 	h.writeCell(loc, newCell)
 	h.heads[idx] = loc
-	//log.Printf("after insertCell(loc=%d, slot=%d, used=%t) %v\n", loc, slot, used, h)
 }
 
-// Transfered h.state to h.prevState
+// Transfer h.state to h.prevState
 // Deletes everything from h.state
 func (h *Heap) resetState() {
 	for k := range h.prevState {
@@ -90,8 +79,35 @@ func (h *Heap) resetState() {
 func (h *Heap) getBuddy(loc uint) uint {
 	hdr := h.readHeader(loc)
 	if hdr.slot >= MaxPwr {
-		// MaxPwr slot has not buddies
+	// MaxPwr slot has not buddies
 		return NullPtr
 	}
 	return loc ^ (1 << hdr.slot)
+}
+
+func (h *Heap) getPrevState() string {
+	switch h.prevState[Type] {
+	case Idle:
+		return "Idle"
+	case Split:
+		return "Split"
+	case CheckAvail:
+		return "Check Avail"
+	case SetHead:
+		return "Set Head"
+	case ValSet:
+		return "Val Set"
+	case FreeSet:
+		return "Free Set"
+	case BuddyChk:
+		return "Buddy Check"
+	case BuddyFail:
+		return "Buddy Fail"
+	case BuddyMerge:
+		return "Buddy Merge"
+	case OutOfMem:
+		return "Out of Memory"
+	default:
+		return ""
+	}
 }

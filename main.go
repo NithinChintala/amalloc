@@ -18,6 +18,33 @@ func main() {
 	//debug()
 }
 
+func interact() {
+	speed, err := getSpeed()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.SetOutput(&DevNull{})
+	h := memsim.NewHeap()
+	waitFunc := getSpeedFunc(speed)
+	memsim.Anim(h, waitFunc)
+}
+
+// Hard coded debugging
+func debug() {
+	log.SetFlags(log.Flags() & ^(log.Ldate | log.Ltime))
+	h := memsim.NewHeap()
+	h.Malloc("x", 1)
+	for i := 0; i < 8; i++ {
+		fmt.Printf("%d ", i)
+		h.Step()
+	}
+	h.Free("x")
+	for i := 0; i < 15; i++ {
+		fmt.Printf("%d ", i)
+		h.Step()
+	}
+}
+
 func getSpeed() (string, error) {
 	validSpeeds := []string{"step", "slow", "norm", "fast", "inst"}
 	speedPtr := flag.String("speed", "norm", "The speed of the animation: step|slow|norm|fast|inst")
@@ -45,31 +72,5 @@ func getSpeedFunc(speed string) func() {
 		return func() {}
 	default:
 		panic(fmt.Sprintf("getSpeedFunc(%s) is invalid\n", speed))
-	}
-}
-
-func interact() {
-	speed, err := getSpeed()
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.SetOutput(&DevNull{})
-	h := memsim.NewHeap()
-	waitFunc := getSpeedFunc(speed)
-	memsim.Anim(h, waitFunc)
-}
-
-func debug() {
-	log.SetFlags(log.Flags() & ^(log.Ldate | log.Ltime))
-	h := memsim.NewHeap()
-	h.Malloc("x", 1)
-	for i := 0; i < 8; i++ {
-		fmt.Printf("%d ", i)
-		h.Step()
-	}
-	h.Free("x")
-	for i := 0; i < 15; i++ {
-		fmt.Printf("%d ", i)
-		h.Step()
 	}
 }
