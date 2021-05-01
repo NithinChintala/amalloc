@@ -32,11 +32,6 @@ var (
 	PointUp = "↑" + strings.Repeat(" ", 7)
 )
 
-// regexs
-var (
-	
-)
-
 // Format:
 // 	- The output is 17 col x 8 row
 // 	- The first col is 3 characters long 
@@ -140,9 +135,9 @@ func setAnnotate(h *Heap, mat [][]string) {
 	}
 
 	for char, loc := range h.vars {
-		hdr := h.readHeader(loc)
-		mat[slotToAnimRow(hdr.slot) + 1][loc + LPad + 1] = PointUp
-		mat[slotToAnimRow(hdr.slot) + 2][loc + LPad + 1] = fmt.Sprintf("%c", char) + strings.Repeat(" ", 7)
+		hdr := h.readHeader(loc - 1)
+		mat[slotToAnimRow(hdr.slot) + 1][loc + LPad] = PointUp
+		mat[slotToAnimRow(hdr.slot) + 2][loc + LPad] = fmt.Sprintf("%c", char) + strings.Repeat(" ", 7)
 	}
 }
 
@@ -163,11 +158,12 @@ func setState(h *Heap, mat [][]string) {
 }
 
 func Anim(h *Heap) {
-	//var cmd string
 	count := 0
 	fmt.Print(ClearOrigin)
 	mallocRegex := regexp.MustCompile(`^([A-Za-z]{1}) = malloc\(([1-9]{1}[0-9]*)\)`)
 	freeRegex := regexp.MustCompile(`^free\(([A-Za-z]{1})\)`)
+	setValRegex := regexp.MustCompile(`^([A-Za-z]{1}) = ([1-9]{1}[0-9]*)`)
+	getValRegex := regexp.MustCompile(`^([A-Za-z]{1})`)
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		Render(h)
@@ -187,6 +183,14 @@ func Anim(h *Heap) {
 				h.Malloc(parsed[1], mustAtoui(parsed[2]))
 			} else if freeRegex.MatchString(cmd) {
 			// free(<var>)
+				parsed := freeRegex.FindStringSubmatch(cmd)
+				h.Free(parsed[1])
+			} else if setValRegex.MatchString(cmd) {
+			// <var> = <val>					
+				fmt.Println(cmd)
+				os.Exit(0)
+			} else if getValRegex.MatchString(cmd) {
+			// <var>
 				fmt.Println(cmd)
 				os.Exit(0)
 			} else {
@@ -197,9 +201,8 @@ func Anim(h *Heap) {
 		} else {
 		// Wait for a second and continue
 			time.Sleep(1 * time.Second)
+			//reader.ReadString('\n')
 			h.Step()
 		}
 	}
 }
-
-

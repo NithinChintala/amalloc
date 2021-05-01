@@ -25,8 +25,8 @@ func debug() {
 		fmt.Printf("%d ", i)
 		h.Step()
 	}
-	h.Free(1)
-	for i := 0; i < 8; i++ {
+	h.Free("x")
+	for i := 0; i < 15; i++ {
 		fmt.Printf("%d ", i)
 		h.Step()
 	}

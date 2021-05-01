@@ -6,7 +6,7 @@ import (
 
 // Update the pointers in the cell free list
 func (h *Heap) removeCell(loc uint) {
-	log.Printf("before removeCell(%d) %v\n", loc, h)
+	log.Printf("removeCell(%d) %v\n", loc, h)
 	oldCell := h.readCell(loc)
 	idx := slotToIdx(oldCell.slot)
 
@@ -14,11 +14,11 @@ func (h *Heap) removeCell(loc uint) {
 	// Front of free list
 		if oldCell.next == NullPtr {
 		// singelton list
-			log.Println("singleton list")
+			//log.Println("singleton list")
 			h.heads[idx] = NullPtr
 		} else {
 		// front of list len > 1
-			log.Println("front, len > 1")
+			//log.Println("front, len > 1")
 			//fmt.Println(oldCell)
 			newFront := h.readCell(oldCell.next)
 			newFront.prev = NullPtr
@@ -27,13 +27,13 @@ func (h *Heap) removeCell(loc uint) {
 		}
 	} else if oldCell.next == NullPtr {
 	// At end of list len > 1
-		log.Println("end, len > 1")
+		//log.Println("end, len > 1")
 		prevCell := h.readCell(oldCell.prev)
 		prevCell.next = oldCell.next
 		h.writeCell(oldCell.prev, prevCell)
 	} else {
 	/// At Middle of list
-		log.Println("middle")
+		//log.Println("middle")
 		prevCell := h.readCell(oldCell.prev)
 		nextCell := h.readCell(oldCell.next)
 
@@ -46,11 +46,11 @@ func (h *Heap) removeCell(loc uint) {
 	// Do this?
 	// oldCell.used = true
 	//h.writeCell(loc, oldCell)
-	log.Printf("after removeCell(%d) %v\n", loc, h)
+	//log.Printf("after removeCell(%d) %v\n", loc, h)
 }
 
 func (h *Heap) insertCell(loc, slot uint, used bool) {
-	log.Printf("before insertCell(loc=%d, slot=%d, used=%t) %v\n", loc, slot, used, h)
+	log.Printf("insertCell(loc=%d, slot=%d, used=%t) %v\n", loc, slot, used, h)
 	idx := slotToIdx(slot)
 	newCell := Cell{}
 	newCell.slot = slot
@@ -72,7 +72,7 @@ func (h *Heap) insertCell(loc, slot uint, used bool) {
 	}
 	h.writeCell(loc, newCell)
 	h.heads[idx] = loc
-	log.Printf("after insertCell(loc=%d, slot=%d, used=%t) %v\n", loc, slot, used, h)
+	//log.Printf("after insertCell(loc=%d, slot=%d, used=%t) %v\n", loc, slot, used, h)
 }
 
 // Transfered h.state to h.prevState

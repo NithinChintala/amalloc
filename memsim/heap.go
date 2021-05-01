@@ -130,10 +130,15 @@ func (h *Heap) Malloc(name string, size uint) {
 	h.state[Name] = strToUint(name)
 }
 
-func (h *Heap) Free(p uint) {
-	log.Printf("Free(%d)\n", p)
+func (h *Heap) Free(variable string) {
+	p, ok := h.vars[strToUint(variable)]
+	if !ok {
+		log.Fatalf("Undeclared variabale given to Free(%s)\n", variable)
+	}
+	log.Printf("Free(%s) @ %d\n", variable, p)
 
 	h.resetState()
 	h.state[Type] = FreeSet
 	h.state[Loc] = p - 1
+	h.state[Name] = strToUint(variable)
 }

@@ -84,7 +84,7 @@ func (h *Heap) setHead() {
 	hdr.used = true
 	h.writeHeader(loc, hdr)
 	
-	h.vars[name] = loc
+	h.vars[name] = loc + 1
 	h.state[Type] = Idle
 	log.Printf("after setHead() %v\n", h)
 }
