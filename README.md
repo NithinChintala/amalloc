@@ -5,7 +5,7 @@ What does that all mean?
 - **Terminal Based** - amalloc runs entirely in the terminal and
 provides visuals to different actions done when allocating memory
 
-- **Interactive** - amalloc works similarly to a REPL loop where you input
+- **Interactive** - amalloc works similarly to a REPL where you input
 commands like
     > x = malloc(3)  
     > y = malloc(1)  
@@ -71,6 +71,7 @@ These are the ways the headers and cells are represented. The next and prev
 sections represent indexes each byte in the 16 byte heap. Since it takes
 4 bits to represent 16 location, a NULL pointer is represented as 11111 or
 5 ones in a row.
+
 **Header** - 1 byte
 ```
          used         unused
