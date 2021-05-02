@@ -213,7 +213,6 @@ func Anim(h *Heap, waitFunc func()) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		Render(h)
-		//fmt.Printf("\n%sState: %s\nCount: %d\n%v\n>>> ", ClearEnd, h.getPrevState(), count, h)
 		fmt.Printf("\n%sState: %s\nCount: %d\n>>> ", ClearEnd, h.getPrevState(), count)
 		count++
 		if h.prevState[Type] == Idle && h.state[Type] == Idle {

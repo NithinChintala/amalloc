@@ -15,7 +15,6 @@ func (dn *DevNull) Write(p []byte) (n int, err error) { return 0, nil }
 
 func main() {
 	interact()
-	//debug()
 }
 
 func interact() {
